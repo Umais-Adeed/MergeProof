@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: mergeproof-postgres
+    environment:
+      POSTGRES_DB: mergeproof
+      POSTGRES_USER: mergeproof
+      POSTGRES_PASSWORD: mergeproof
+    ports:
+      - "5432:5432"
+    volumes:
+      - mergeproof-postgres-data:/var/lib/postgresql/data
+
+volumes:
+  mergeproof-postgres-data:
