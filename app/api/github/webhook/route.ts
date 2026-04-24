@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 
 import { db } from "@/lib/db";
+import { processInstallationWebhookEvent } from "@/lib/github/installations";
 import { verifyGitHubWebhookSignature } from "@/lib/github/webhook";
 
 export async function POST(request: Request) {
@@ -46,14 +47,23 @@ export async function POST(request: Request) {
       ? payload.action
       : null;
 
+  let webhookEvent:
+    | {
+        id: string;
+      }
+    | undefined;
+
   try {
-    await db.webhookEvent.create({
+    webhookEvent = await db.webhookEvent.create({
       data: {
         deliveryId,
         eventName,
         action,
         rawPayload: payload,
         processed: false,
+      },
+      select: {
+        id: true,
       },
     });
   } catch (error) {
@@ -81,15 +91,62 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Failed to store webhook event." }, { status: 500 });
   }
 
-  console.info("GitHub webhook stored", {
-    deliveryId,
-    eventName,
-    action,
-  });
+  try {
+    const processingResult = await processInstallationWebhookEvent({
+      eventName,
+      action,
+      payload,
+    });
 
-  return NextResponse.json({
-    ok: true,
-    deliveryId,
-    eventName,
-  });
+    await db.webhookEvent.update({
+      where: {
+        id: webhookEvent.id,
+      },
+      data: {
+        processed: processingResult.handled,
+        error: null,
+      },
+    });
+
+    console.info("GitHub webhook stored", {
+      deliveryId,
+      eventName,
+      action,
+      processed: processingResult.handled,
+    });
+
+    return NextResponse.json({
+      ok: true,
+      deliveryId,
+      eventName,
+      processed: processingResult.handled,
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown processing error.";
+
+    await db.webhookEvent.update({
+      where: {
+        id: webhookEvent.id,
+      },
+      data: {
+        processed: false,
+        error: errorMessage,
+      },
+    });
+
+    console.error("Failed to process GitHub webhook", {
+      deliveryId,
+      eventName,
+      action,
+      error,
+    });
+
+    return NextResponse.json(
+      {
+        error: "Failed to process webhook event.",
+        deliveryId,
+      },
+      { status: 500 },
+    );
+  }
 }
