@@ -2,45 +2,58 @@ import { db } from "@/lib/db";
 
 const upcomingSections = [
   {
-    title: "Webhook Inbox",
+    title: "Pull Request Sync",
     description:
-      "Incoming GitHub delivery records will be stored and processed from this pipeline.",
-  },
-  {
-    title: "Review Queue",
-    description:
-      "Each pull request will surface its branch state, checks, and MergeProof verdict here.",
+      "The next milestone can start recording pull requests and branch metadata after installation syncing is stable.",
   },
   {
     title: "Checks Overview",
     description:
-      "Check runs and conclusions will be summarized once PR synchronization is live.",
+      "Check runs and conclusions will be summarized only after PR-level synchronization is added.",
+  },
+  {
+    title: "Review Automation",
+    description:
+      "Comments, AI scoring, and merge guidance stay out until the structured GitHub data pipeline is complete.",
   },
 ];
 
 export default async function Home() {
-  const latestWebhookEvents = await db.webhookEvent.findMany({
-    orderBy: {
-      createdAt: "desc",
-    },
-    take: 5,
-  });
+  const [latestWebhookEvents, installationCount, repositoryCount] = await Promise.all([
+    db.webhookEvent.findMany({
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: 5,
+    }),
+    db.installation.count(),
+    db.repository.count(),
+  ]);
+
+  const processedCount = latestWebhookEvents.filter((event) => event.processed).length;
+  const pendingCount = latestWebhookEvents.filter((event) => !event.processed).length;
+  const erroredCount = latestWebhookEvents.filter((event) => Boolean(event.error)).length;
 
   const dashboardCards = [
     {
-      label: "Webhook Events",
-      value: latestWebhookEvents.length.toString(),
-      note: "Latest stored deliveries from the GitHub webhook intake route.",
+      label: "Installations",
+      value: installationCount.toString(),
+      note: "Structured GitHub App installations synced from webhook payloads.",
     },
     {
-      label: "Processed Events",
-      value: latestWebhookEvents.filter((event) => event.processed).length.toString(),
-      note: "Still expected to stay at zero until event processors are added.",
+      label: "Repositories",
+      value: repositoryCount.toString(),
+      note: "Repositories currently attached to active app installations.",
     },
     {
-      label: "Pending Deliveries",
-      value: latestWebhookEvents.filter((event) => !event.processed).length.toString(),
-      note: "Valid deliveries are persisted with processed=false for now.",
+      label: "Recent Processed",
+      value: processedCount.toString(),
+      note: "Processed webhook events in the latest dashboard sample window.",
+    },
+    {
+      label: "Recent Pending",
+      value: pendingCount.toString(),
+      note: "Events not handled by this milestone or still awaiting future processors.",
     },
   ];
 
@@ -55,12 +68,12 @@ export default async function Home() {
               </p>
               <div className="space-y-3">
                 <h1 className="max-w-2xl text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">
-                  GitHub webhook intake is live and storing deliveries locally.
+                  GitHub installations and repositories now sync into structured tables.
                 </h1>
                 <p className="max-w-2xl text-sm leading-7 text-stone-300 sm:text-base">
-                  This milestone adds the intake layer only: signed delivery verification,
-                  raw payload storage, and basic event logging. Processing and PR analysis
-                  still come in later milestones.
+                  This milestone processes ping, installation, and installation repository
+                  events after raw delivery storage. It keeps `WebhookEvent` as the source
+                  log while maintaining normalized installation and repository data.
                 </p>
               </div>
             </div>
@@ -71,15 +84,17 @@ export default async function Home() {
               </p>
               <div className="mt-5 space-y-4 text-sm text-stone-200">
                 <div className="rounded-2xl border border-emerald-400/30 bg-emerald-400/10 p-4">
-                  <p className="font-medium text-emerald-200">Webhook intake complete</p>
+                  <p className="font-medium text-emerald-200">Installation sync active</p>
                   <p className="mt-1 text-stone-300">
-                    Requests are verified, stored in Postgres, and visible on this page.
+                    Supported GitHub App events now update structured installation data.
                   </p>
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                  <p className="font-medium text-stone-100">Next milestone</p>
+                  <p className="font-medium text-stone-100">Recent errors</p>
                   <p className="mt-1 text-stone-300">
-                    Add installation syncing and event-specific persistence beyond raw delivery storage.
+                    {erroredCount === 0
+                      ? "No processing errors in the latest event sample."
+                      : `${erroredCount} recent event(s) have processing errors saved in WebhookEvent.error.`}
                   </p>
                 </div>
               </div>
@@ -87,7 +102,7 @@ export default async function Home() {
           </div>
         </section>
 
-        <section className="grid gap-4 md:grid-cols-3">
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {dashboardCards.map((card) => (
             <article
               key={card.label}
@@ -108,7 +123,7 @@ export default async function Home() {
                   Latest Webhook Events
                 </p>
                 <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em]">
-                  Recent delivery records from Postgres
+                  Delivery log with processing status
                 </h2>
               </div>
               <span className="rounded-full border border-stone-900/10 bg-stone-100 px-3 py-1 text-xs font-medium text-stone-600">
@@ -120,9 +135,8 @@ export default async function Home() {
               {latestWebhookEvents.length === 0 ? (
                 <div className="rounded-[1.25rem] border border-dashed border-stone-300 bg-stone-50/80 p-5">
                   <p className="text-sm leading-7 text-stone-600">
-                    No webhook deliveries have been stored yet. Send a signed POST request
-                    to <code className="rounded bg-stone-200 px-1 py-0.5">/api/github/webhook</code>
-                    and the latest events will appear here.
+                    No webhook deliveries have been stored yet. Redeliver a GitHub App event
+                    and the latest records will appear here.
                   </p>
                 </div>
               ) : (
@@ -148,6 +162,11 @@ export default async function Home() {
                     <p className="mt-3 text-sm text-stone-600">
                       Stored at {event.createdAt.toLocaleString("en-US", { hour12: false })}
                     </p>
+                    {event.error ? (
+                      <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                        {event.error}
+                      </p>
+                    ) : null}
                   </div>
                 ))
               )}
