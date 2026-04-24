@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { createMergeProofCheckRun } from "@/lib/github/check-runs";
 
 type JsonObject = Record<string, unknown>;
 
@@ -19,6 +20,7 @@ type PullRequestPayload = {
   authorLogin: string;
   repositoryOwner: string;
   repositoryName: string;
+  installationId: number | null;
 };
 
 function isObject(value: unknown): value is JsonObject {
@@ -71,6 +73,10 @@ function getPullRequestPayload(payload: unknown): PullRequestPayload | null {
     authorLogin: pullRequest.user.login,
     repositoryOwner: ownerLogin,
     repositoryName: repository.name,
+    installationId:
+      isObject(payload.installation) && typeof payload.installation.id === "number"
+        ? payload.installation.id
+        : null,
   };
 }
 
@@ -81,6 +87,13 @@ const handledPullRequestActions = new Set([
   "synchronize",
   "ready_for_review",
   "closed",
+]);
+
+const checkRunActions = new Set([
+  "opened",
+  "synchronize",
+  "reopened",
+  "ready_for_review",
 ]);
 
 export async function processPullRequestWebhookEvent({
@@ -116,7 +129,7 @@ export async function processPullRequestWebhookEvent({
     );
   }
 
-  await db.pullRequest.upsert({
+  const savedPullRequest = await db.pullRequest.upsert({
     where: {
       repositoryId_number: {
         repositoryId: repository.id,
@@ -144,6 +157,20 @@ export async function processPullRequestWebhookEvent({
       authorLogin: pullRequest.authorLogin,
     },
   });
+
+  if (checkRunActions.has(action)) {
+    if (!pullRequest.installationId) {
+      throw new Error("Pull request payload is missing installation.id for check run creation.");
+    }
+
+    await createMergeProofCheckRun({
+      installationId: pullRequest.installationId,
+      owner: pullRequest.repositoryOwner,
+      repo: pullRequest.repositoryName,
+      headSha: pullRequest.headSha,
+      pullRequestId: savedPullRequest.id,
+    });
+  }
 
   return { handled: true };
 }
