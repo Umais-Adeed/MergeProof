@@ -2,35 +2,41 @@ import { db } from "@/lib/db";
 
 const upcomingSections = [
   {
-    title: "Check Runs",
+    title: "Evidence Parsing",
     description:
-      "The next milestone can attach CI status and conclusions to synchronized pull requests.",
+      "The next milestone can start enriching check runs with real repository and pull request evidence.",
   },
   {
-    title: "Review Comments",
+    title: "Pass/Fail Logic",
     description:
-      "PR comments and maintainers-facing guidance should wait until checks and evidence are modeled.",
+      "Check conclusions should stay neutral until MergeProof has explicit evidence and scoring rules.",
   },
   {
-    title: "Automation Layer",
+    title: "Reviewer Output",
     description:
-      "AI scoring, question generation, and merge reasoning still sit after stable PR and checks data.",
+      "Comments, PR guidance, and AI output remain out until checks carry meaningful evidence.",
   },
 ];
 
 export default async function Home() {
-  const [latestWebhookEvents, installationCount, repositoryCount, pullRequestCount] =
-    await Promise.all([
-      db.webhookEvent.findMany({
-        orderBy: {
-          createdAt: "desc",
-        },
-        take: 5,
-      }),
-      db.installation.count(),
-      db.repository.count(),
-      db.pullRequest.count(),
-    ]);
+  const [
+    latestWebhookEvents,
+    installationCount,
+    repositoryCount,
+    pullRequestCount,
+    checkRunCount,
+  ] = await Promise.all([
+    db.webhookEvent.findMany({
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: 5,
+    }),
+    db.installation.count(),
+    db.repository.count(),
+    db.pullRequest.count(),
+    db.checkRun.count(),
+  ]);
 
   const processedCount = latestWebhookEvents.filter((event) => event.processed).length;
   const pendingCount = latestWebhookEvents.filter((event) => !event.processed).length;
@@ -51,6 +57,11 @@ export default async function Home() {
       label: "Pull Requests",
       value: pullRequestCount.toString(),
       note: "Structured PR rows synced from supported pull_request webhook actions.",
+    },
+    {
+      label: "Check Runs",
+      value: checkRunCount.toString(),
+      note: "GitHub check runs created as MergeProof placeholders on supported PR actions.",
     },
     {
       label: "Recent Processed",
@@ -75,12 +86,12 @@ export default async function Home() {
               </p>
               <div className="space-y-3">
                 <h1 className="max-w-2xl text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">
-                  Pull requests now sync into structured rows alongside installations and repositories.
+                  MergeProof now creates a GitHub check run on supported pull request events.
                 </h1>
                 <p className="max-w-2xl text-sm leading-7 text-stone-300 sm:text-base">
-                  This milestone processes supported <code>pull_request</code> webhook actions
-                  after raw delivery storage. MergeProof now has normalized installation,
-                  repository, and PR data ready for checks and review automation layers.
+                  This milestone adds the first real GitHub-side action: a neutral
+                  <code> mergeproof/evidence-gate </code>
+                  check run on the PR head SHA, plus a linked CheckRun row in Postgres.
                 </p>
               </div>
             </div>
@@ -91,9 +102,9 @@ export default async function Home() {
               </p>
               <div className="mt-5 space-y-4 text-sm text-stone-200">
                 <div className="rounded-2xl border border-emerald-400/30 bg-emerald-400/10 p-4">
-                  <p className="font-medium text-emerald-200">Pull request sync active</p>
+                  <p className="font-medium text-emerald-200">Check run creation active</p>
                   <p className="mt-1 text-stone-300">
-                    Supported PR actions now upsert structured records in the PullRequest table.
+                    Supported PR actions now create GitHub check runs and persist CheckRun rows.
                   </p>
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
@@ -109,7 +120,7 @@ export default async function Home() {
           </div>
         </section>
 
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {dashboardCards.map((card) => (
             <article
               key={card.label}
