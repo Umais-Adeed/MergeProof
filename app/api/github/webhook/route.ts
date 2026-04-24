@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 
 import { db } from "@/lib/db";
 import { processInstallationWebhookEvent } from "@/lib/github/installations";
+import { processPullRequestWebhookEvent } from "@/lib/github/pull-requests";
 import { verifyGitHubWebhookSignature } from "@/lib/github/webhook";
 
 export async function POST(request: Request) {
@@ -92,18 +93,24 @@ export async function POST(request: Request) {
   }
 
   try {
-    const processingResult = await processInstallationWebhookEvent({
+    const installationResult = await processInstallationWebhookEvent({
       eventName,
       action,
       payload,
     });
+    const pullRequestResult = await processPullRequestWebhookEvent({
+      eventName,
+      action,
+      payload,
+    });
+    const wasHandled = installationResult.handled || pullRequestResult.handled;
 
     await db.webhookEvent.update({
       where: {
         id: webhookEvent.id,
       },
       data: {
-        processed: processingResult.handled,
+        processed: wasHandled,
         error: null,
       },
     });
@@ -112,14 +119,14 @@ export async function POST(request: Request) {
       deliveryId,
       eventName,
       action,
-      processed: processingResult.handled,
+      processed: wasHandled,
     });
 
     return NextResponse.json({
       ok: true,
       deliveryId,
       eventName,
-      processed: processingResult.handled,
+      processed: wasHandled,
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown processing error.";
