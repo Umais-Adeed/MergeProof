@@ -2,33 +2,35 @@ import { db } from "@/lib/db";
 
 const upcomingSections = [
   {
-    title: "Pull Request Sync",
+    title: "Check Runs",
     description:
-      "The next milestone can start recording pull requests and branch metadata after installation syncing is stable.",
+      "The next milestone can attach CI status and conclusions to synchronized pull requests.",
   },
   {
-    title: "Checks Overview",
+    title: "Review Comments",
     description:
-      "Check runs and conclusions will be summarized only after PR-level synchronization is added.",
+      "PR comments and maintainers-facing guidance should wait until checks and evidence are modeled.",
   },
   {
-    title: "Review Automation",
+    title: "Automation Layer",
     description:
-      "Comments, AI scoring, and merge guidance stay out until the structured GitHub data pipeline is complete.",
+      "AI scoring, question generation, and merge reasoning still sit after stable PR and checks data.",
   },
 ];
 
 export default async function Home() {
-  const [latestWebhookEvents, installationCount, repositoryCount] = await Promise.all([
-    db.webhookEvent.findMany({
-      orderBy: {
-        createdAt: "desc",
-      },
-      take: 5,
-    }),
-    db.installation.count(),
-    db.repository.count(),
-  ]);
+  const [latestWebhookEvents, installationCount, repositoryCount, pullRequestCount] =
+    await Promise.all([
+      db.webhookEvent.findMany({
+        orderBy: {
+          createdAt: "desc",
+        },
+        take: 5,
+      }),
+      db.installation.count(),
+      db.repository.count(),
+      db.pullRequest.count(),
+    ]);
 
   const processedCount = latestWebhookEvents.filter((event) => event.processed).length;
   const pendingCount = latestWebhookEvents.filter((event) => !event.processed).length;
@@ -46,14 +48,19 @@ export default async function Home() {
       note: "Repositories currently attached to active app installations.",
     },
     {
+      label: "Pull Requests",
+      value: pullRequestCount.toString(),
+      note: "Structured PR rows synced from supported pull_request webhook actions.",
+    },
+    {
       label: "Recent Processed",
       value: processedCount.toString(),
-      note: "Processed webhook events in the latest dashboard sample window.",
+      note: "Handled webhook events in the latest dashboard sample window.",
     },
     {
       label: "Recent Pending",
       value: pendingCount.toString(),
-      note: "Events not handled by this milestone or still awaiting future processors.",
+      note: "Events not handled by current milestones or awaiting future processors.",
     },
   ];
 
@@ -68,12 +75,12 @@ export default async function Home() {
               </p>
               <div className="space-y-3">
                 <h1 className="max-w-2xl text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">
-                  GitHub installations and repositories now sync into structured tables.
+                  Pull requests now sync into structured rows alongside installations and repositories.
                 </h1>
                 <p className="max-w-2xl text-sm leading-7 text-stone-300 sm:text-base">
-                  This milestone processes ping, installation, and installation repository
-                  events after raw delivery storage. It keeps `WebhookEvent` as the source
-                  log while maintaining normalized installation and repository data.
+                  This milestone processes supported <code>pull_request</code> webhook actions
+                  after raw delivery storage. MergeProof now has normalized installation,
+                  repository, and PR data ready for checks and review automation layers.
                 </p>
               </div>
             </div>
@@ -84,9 +91,9 @@ export default async function Home() {
               </p>
               <div className="mt-5 space-y-4 text-sm text-stone-200">
                 <div className="rounded-2xl border border-emerald-400/30 bg-emerald-400/10 p-4">
-                  <p className="font-medium text-emerald-200">Installation sync active</p>
+                  <p className="font-medium text-emerald-200">Pull request sync active</p>
                   <p className="mt-1 text-stone-300">
-                    Supported GitHub App events now update structured installation data.
+                    Supported PR actions now upsert structured records in the PullRequest table.
                   </p>
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
@@ -102,7 +109,7 @@ export default async function Home() {
           </div>
         </section>
 
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           {dashboardCards.map((card) => (
             <article
               key={card.label}
