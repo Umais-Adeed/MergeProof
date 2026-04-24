@@ -61,7 +61,7 @@ export default async function Home() {
     {
       label: "Check Runs",
       value: checkRunCount.toString(),
-      note: "GitHub check runs created as MergeProof placeholders on supported PR actions.",
+      note: "GitHub check runs created with deterministic evidence verdicts on supported PR actions.",
     },
     {
       label: "Recent Processed",
@@ -86,12 +86,12 @@ export default async function Home() {
               </p>
               <div className="space-y-3">
                 <h1 className="max-w-2xl text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">
-                  MergeProof now creates a GitHub check run on supported pull request events.
+                  MergeProof now scores PR evidence deterministically and publishes a real check conclusion.
                 </h1>
                 <p className="max-w-2xl text-sm leading-7 text-stone-300 sm:text-base">
-                  This milestone adds the first real GitHub-side action: a neutral
+                  This milestone upgrades the first GitHub-side action: a deterministic
                   <code> mergeproof/evidence-gate </code>
-                  check run on the PR head SHA, plus a linked CheckRun row in Postgres.
+                  check run on the PR head SHA with success, neutral, or failure based on PR evidence quality.
                 </p>
               </div>
             </div>
@@ -104,7 +104,7 @@ export default async function Home() {
                 <div className="rounded-2xl border border-emerald-400/30 bg-emerald-400/10 p-4">
                   <p className="font-medium text-emerald-200">Check run creation active</p>
                   <p className="mt-1 text-stone-300">
-                    Supported PR actions now create GitHub check runs and persist CheckRun rows.
+                    Supported PR actions now evaluate PR evidence and persist check run verdicts.
                   </p>
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-black/20 p-4">

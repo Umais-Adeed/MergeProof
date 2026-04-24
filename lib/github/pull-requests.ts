@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { evaluatePullRequestEvidence } from "@/lib/evidence/evaluate-pr-body";
 import { createMergeProofCheckRun } from "@/lib/github/check-runs";
 
 type JsonObject = Record<string, unknown>;
@@ -163,12 +164,18 @@ export async function processPullRequestWebhookEvent({
       throw new Error("Pull request payload is missing installation.id for check run creation.");
     }
 
+    const evaluation = evaluatePullRequestEvidence({
+      title: pullRequest.title,
+      body: pullRequest.body,
+    });
+
     await createMergeProofCheckRun({
       installationId: pullRequest.installationId,
       owner: pullRequest.repositoryOwner,
       repo: pullRequest.repositoryName,
       headSha: pullRequest.headSha,
       pullRequestId: savedPullRequest.id,
+      evaluation,
     });
   }
 

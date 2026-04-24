@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { getGitHubInstallationClient } from "@/lib/github/client";
+import type { evaluatePullRequestEvidence } from "@/lib/evidence/evaluate-pr-body";
 
 const MERGEPROOF_CHECK_RUN_NAME = "mergeproof/evidence-gate";
 
@@ -9,6 +10,7 @@ type CreateMergeProofCheckRunInput = {
   repo: string;
   headSha: string;
   pullRequestId: string;
+  evaluation: ReturnType<typeof evaluatePullRequestEvidence>;
 };
 
 export async function createMergeProofCheckRun({
@@ -17,6 +19,7 @@ export async function createMergeProofCheckRun({
   repo,
   headSha,
   pullRequestId,
+  evaluation,
 }: CreateMergeProofCheckRunInput) {
   const octokit = getGitHubInstallationClient(installationId);
   const detailsUrl = process.env.APP_URL ? `${process.env.APP_URL}/` : null;
@@ -27,12 +30,12 @@ export async function createMergeProofCheckRun({
     name: MERGEPROOF_CHECK_RUN_NAME,
     head_sha: headSha,
     status: "completed",
-    conclusion: "neutral",
+    conclusion: evaluation.conclusion,
     details_url: detailsUrl ?? undefined,
     output: {
-      title: "MergeProof evidence gate",
-      summary:
-        "MergeProof received this pull request and created the initial evidence-gate check run.",
+      title: "MergeProof Evidence Gate",
+      summary: evaluation.summary,
+      text: evaluation.outputText,
     },
   });
 
