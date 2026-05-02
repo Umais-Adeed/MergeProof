@@ -92,6 +92,7 @@ const handledPullRequestActions = new Set([
 
 const checkRunActions = new Set([
   "opened",
+  "edited",
   "synchronize",
   "reopened",
   "ready_for_review",
