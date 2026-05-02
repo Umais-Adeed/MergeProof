@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { evaluatePullRequestEvidence } from "@/lib/evidence/evaluate-pr-body";
-import { createMergeProofCheckRun } from "@/lib/github/check-runs";
+import { createOrUpdateMergeProofCheckRun } from "@/lib/github/check-runs";
 
 type JsonObject = Record<string, unknown>;
 
@@ -169,7 +169,7 @@ export async function processPullRequestWebhookEvent({
       body: pullRequest.body,
     });
 
-    await createMergeProofCheckRun({
+    await createOrUpdateMergeProofCheckRun({
       installationId: pullRequest.installationId,
       owner: pullRequest.repositoryOwner,
       repo: pullRequest.repositoryName,

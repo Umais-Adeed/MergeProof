@@ -61,7 +61,7 @@ export default async function Home() {
     {
       label: "Check Runs",
       value: checkRunCount.toString(),
-      note: "GitHub check runs created with deterministic evidence verdicts on supported PR actions.",
+      note: "GitHub check runs are updated in place for repeated PR body edits on the same head SHA.",
     },
     {
       label: "Recent Processed",
@@ -86,7 +86,7 @@ export default async function Home() {
               </p>
               <div className="space-y-3">
                 <h1 className="max-w-2xl text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">
-                  MergeProof now scores PR evidence deterministically and publishes a real check conclusion.
+                  MergeProof now updates existing evidence-gate checks instead of duplicating them on the same commit.
                 </h1>
                 <p className="max-w-2xl text-sm leading-7 text-stone-300 sm:text-base">
                   This milestone upgrades the first GitHub-side action: a deterministic
@@ -104,7 +104,7 @@ export default async function Home() {
                 <div className="rounded-2xl border border-emerald-400/30 bg-emerald-400/10 p-4">
                   <p className="font-medium text-emerald-200">Check run creation active</p>
                   <p className="mt-1 text-stone-300">
-                    Supported PR actions now evaluate PR evidence and persist check run verdicts.
+                    Supported PR actions now evaluate PR evidence and update or create the matching check run for the current head SHA.
                   </p>
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-black/20 p-4">

@@ -66,10 +66,13 @@ model CheckRun {
   githubCheckRunId BigInt?
   pullRequestId    String
   pullRequest      PullRequest @relation(fields: [pullRequestId], references: [id])
+  headSha          String
   name             String
   status           String
   conclusion       String?
   detailsUrl       String?
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
+
+  @@unique([pullRequestId, name, headSha])
 }
