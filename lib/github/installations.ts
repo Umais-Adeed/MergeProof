@@ -156,6 +156,53 @@ async function syncRepositories(
   }
 }
 
+async function deleteRepositoryTree(repositoryIds: string[]) {
+  if (repositoryIds.length === 0) {
+    return;
+  }
+
+  const pullRequests = await db.pullRequest.findMany({
+    where: {
+      repositoryId: {
+        in: repositoryIds,
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  const pullRequestIds = pullRequests.map((pullRequest) => pullRequest.id);
+
+  await db.$transaction(async (tx) => {
+    if (pullRequestIds.length > 0) {
+      await tx.checkRun.deleteMany({
+        where: {
+          pullRequestId: {
+            in: pullRequestIds,
+          },
+        },
+      });
+    }
+
+    await tx.pullRequest.deleteMany({
+      where: {
+        repositoryId: {
+          in: repositoryIds,
+        },
+      },
+    });
+
+    await tx.repository.deleteMany({
+      where: {
+        id: {
+          in: repositoryIds,
+        },
+      },
+    });
+  });
+}
+
 async function removeRepositories(repositories: RepositoryPayload[]) {
   const githubRepoIds = repositories.map((repository) => BigInt(repository.id));
 
@@ -163,13 +210,18 @@ async function removeRepositories(repositories: RepositoryPayload[]) {
     return;
   }
 
-  await db.repository.deleteMany({
+  const repositoryRows = await db.repository.findMany({
     where: {
       githubRepoId: {
         in: githubRepoIds,
       },
     },
+    select: {
+      id: true,
+    },
   });
+
+  await deleteRepositoryTree(repositoryRows.map((repository) => repository.id));
 }
 
 async function handlePingEvent() {
@@ -190,9 +242,31 @@ async function handleInstallationDeleted(payload: unknown) {
     throw new Error("Installation deleted payload is missing a valid installation object.");
   }
 
-  await db.installation.deleteMany({
+  const installationRow = await db.installation.findUnique({
     where: {
       githubInstallationId: BigInt(installation.id),
+    },
+    select: {
+      id: true,
+      repositories: {
+        select: {
+          id: true,
+        },
+      },
+    },
+  });
+
+  if (!installationRow) {
+    return;
+  }
+
+  await deleteRepositoryTree(
+    installationRow.repositories.map((repository) => repository.id),
+  );
+
+  await db.installation.deleteMany({
+    where: {
+      id: installationRow.id,
     },
   });
 }
