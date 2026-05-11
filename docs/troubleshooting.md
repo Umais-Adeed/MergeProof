@@ -5,7 +5,7 @@
 Make sure the Smee client targets the webhook route, not the app root:
 
 ```bash
-npx smee-client --url https://smee.io/mergeproof-dev --target http://localhost:3000/api/github/webhook
+npx smee-client --url https://smee.io/mergeproof-dev --target http://localhost:3001/api/github/webhook
 ```
 
 Also confirm your GitHub App webhook URL is the same Smee URL.
@@ -95,6 +95,7 @@ Check:
 - `GITHUB_APP_ID` is correct
 - `GITHUB_PRIVATE_KEY` is a valid PEM
 - `pull_request` events are enabled
+- Pull requests permission is read-only or better so MergeProof can list changed files
 - the latest `WebhookEvent.error` is empty
 
 ## Duplicate checks or old migrations
@@ -109,4 +110,4 @@ npx prisma migrate dev
 
 ## Localhost cannot be used directly as GitHub webhook URL
 
-GitHub cannot deliver webhooks to `http://localhost:3000`. For local development, use Smee or another public tunnel. In production, use a public HTTPS URL.
+GitHub cannot deliver webhooks to `http://localhost:3001` directly. For local development, use Smee or another public tunnel. In production, use a public HTTPS URL.

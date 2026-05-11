@@ -1,6 +1,6 @@
 # Recommended PR template
 
-MergeProof currently evaluates PR evidence from the PR title and body only. The recommended body format is:
+MergeProof scores PR evidence from the PR title and body, then enriches the check output with deterministic changed-file signals from GitHub. The recommended body format is:
 
 ```md
 ## What changed

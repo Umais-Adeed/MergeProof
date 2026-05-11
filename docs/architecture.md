@@ -22,7 +22,7 @@ GitHub webhook
    - `Repository`
    - `PullRequest`
    - `CheckRun`
-5. PR body evidence is evaluated deterministically.
+5. PR body evidence is evaluated deterministically and PR changed files are fetched from GitHub.
 6. MergeProof creates or updates `mergeproof/evidence-gate` on the PR head SHA.
 
 ## Current processors
@@ -49,4 +49,4 @@ GitHub webhook
 
 ## Design constraint
 
-The current product is deterministic. It does not call AI providers, post PR comments, or inspect changed files.
+The current product is deterministic. It does not call AI providers or post PR comments. It does inspect changed files from GitHub PR metadata.

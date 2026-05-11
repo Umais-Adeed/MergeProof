@@ -1,3 +1,9 @@
+import {
+  classifyChangedFiles,
+  type ChangedFileSignals,
+  type PullRequestChangedFile,
+} from "@/lib/evidence/classify-changed-files";
+
 type EvidenceConclusion = "success" | "neutral" | "failure";
 
 type EvidenceSectionKey =
@@ -15,6 +21,7 @@ type EvidenceEvaluation = {
   detectedSections: string[];
   missingSections: string[];
   weakSections: string[];
+  changedFileSignals: ChangedFileSignals;
   outputText: string;
 };
 
@@ -141,12 +148,15 @@ function getSummary(score: number, maxScore: number, conclusion: EvidenceConclus
 export function evaluatePullRequestEvidence({
   title,
   body,
+  changedFiles = [],
 }: {
   title: string;
   body: string | null;
+  changedFiles?: PullRequestChangedFile[];
 }): EvidenceEvaluation {
   const normalizedBody = body ?? "";
   const sections = extractSectionContent(normalizedBody);
+  const changedFileSignals = classifyChangedFiles(changedFiles);
 
   const detectedSections: string[] = [];
   const missingSections: string[] = [];
@@ -177,6 +187,18 @@ export function evaluatePullRequestEvidence({
     detectedSections.length > 0 ? detectedSections.join(", ") : "None";
   const missingLine = missingSections.length > 0 ? missingSections.join(", ") : "None";
   const weakLine = weakSections.length > 0 ? weakSections.join(", ") : "None";
+  const changedFileLines = [
+    "Changed-file signals:",
+    `- Docs only: ${changedFileSignals.docsOnly ? "yes" : "no"}`,
+    `- Source files changed: ${changedFileSignals.sourceFilesChanged ? "yes" : "no"}`,
+    `- Test files changed: ${changedFileSignals.testFilesChanged ? "yes" : "no"}`,
+    `- Config/dependency files changed: ${changedFileSignals.configOrDependencyFilesChanged ? "yes" : "no"}`,
+    `- Migration/database files changed: ${changedFileSignals.migrationOrDatabaseFilesChanged ? "yes" : "no"}`,
+    `- Large PR warning: ${changedFileSignals.largePrWarning ? "yes" : "no"}`,
+    `- Source changed without tests: ${changedFileSignals.sourceChangedWithoutTests ? "yes" : "no"}`,
+    `- Changed file count: ${changedFileSignals.changedFileCount}`,
+    `- Total additions/deletions: ${changedFileSignals.totalLineChanges}`,
+  ];
 
   const outputText = [
     titleLine,
@@ -193,6 +215,8 @@ export function evaluatePullRequestEvidence({
     "A section only counts when it has at least 15 non-whitespace characters.",
     'Placeholders such as "N/A", "none", "todo", "-", or "not sure" do not count.',
     "",
+    ...changedFileLines,
+    "",
     "This verdict is deterministic and does not use AI yet.",
   ].join("\n");
 
@@ -204,6 +228,7 @@ export function evaluatePullRequestEvidence({
     detectedSections,
     missingSections,
     weakSections,
+    changedFileSignals,
     outputText,
   };
 }

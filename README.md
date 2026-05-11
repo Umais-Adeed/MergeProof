@@ -20,6 +20,7 @@ MergeProof gives maintainers an early, repeatable signal before review starts. I
 - Pull request sync
 - GitHub check run creation and updates
 - Deterministic PR body evidence evaluation
+- Deterministic changed-file evidence signals from GitHub PR files
 - Duplicate check prevention for repeated PR body edits on the same commit SHA
 - Local dashboard showing webhook, installation, repository, PR, and check-run counts
 
@@ -29,7 +30,7 @@ MergeProof gives maintainers an early, repeatable signal before review starts. I
 2. The Next.js webhook route verifies the GitHub signature.
 3. MergeProof stores the raw delivery in `WebhookEvent`.
 4. Supported events are processed into structured Prisma models.
-5. Supported PR events evaluate the PR body.
+5. Supported PR events evaluate the PR body and fetch PR changed files from GitHub.
 6. MergeProof creates or updates `mergeproof/evidence-gate` on the PR head SHA.
 
 See [docs/architecture.md](docs/architecture.md) for the short architecture overview.
@@ -66,7 +67,7 @@ DATABASE_URL="postgresql://mergeproof:mergeproof@localhost:5432/mergeproof"
 GITHUB_APP_ID=""
 GITHUB_PRIVATE_KEY=""
 GITHUB_WEBHOOK_SECRET=""
-APP_URL="http://localhost:3000"
+APP_URL="http://localhost:3001"
 ```
 
 Start Postgres:
@@ -88,7 +89,7 @@ Start the app:
 npm run dev
 ```
 
-Open `http://localhost:3000`.
+Open `http://localhost:3001`.
 
 ## GitHub App setup
 
@@ -124,7 +125,7 @@ https://smee.io/mergeproof-dev
 Forward Smee deliveries to your local webhook route:
 
 ```bash
-npx smee-client --url https://smee.io/mergeproof-dev --target http://localhost:3000/api/github/webhook
+npx smee-client --url https://smee.io/mergeproof-dev --target http://localhost:3001/api/github/webhook
 ```
 
 Then open or edit a PR in a repository where the app is installed.
@@ -145,7 +146,7 @@ Open or edit a pull request with a body that includes:
 ## AI assistance
 ```
 
-MergeProof evaluates the PR body and creates or updates `mergeproof/evidence-gate`.
+MergeProof evaluates the PR body, inspects PR changed files deterministically, and creates or updates `mergeproof/evidence-gate`.
 
 See [docs/pr-template.md](docs/pr-template.md) for the accepted section aliases and scoring rules.
 
@@ -153,16 +154,14 @@ See [docs/pr-template.md](docs/pr-template.md) for the accepted section aliases 
 
 - No AI evaluation
 - No PR comments
-- No changed-file analysis
 - No CI signal ingestion
 - No hosted SaaS mode
 - No `check_run.rerequested` or `check_suite.rerequested` handling
-- Evidence scoring only reads the PR title and body
+- Evidence scoring still uses the PR title and body, while check output now includes deterministic changed-file signals
 - Check-run output is deterministic and intentionally basic
 
 ## Roadmap
 
-- Add changed-file evidence checks
 - Update check runs from richer deterministic signals
 - Add maintainer-facing review summaries
 - Add optional PR comments

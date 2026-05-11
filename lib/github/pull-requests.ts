@@ -1,6 +1,8 @@
 import { db } from "@/lib/db";
+import type { PullRequestChangedFile } from "@/lib/evidence/classify-changed-files";
 import { evaluatePullRequestEvidence } from "@/lib/evidence/evaluate-pr-body";
 import { createOrUpdateMergeProofCheckRun } from "@/lib/github/check-runs";
+import { getGitHubInstallationClient } from "@/lib/github/client";
 
 type JsonObject = Record<string, unknown>;
 
@@ -23,6 +25,48 @@ type PullRequestPayload = {
   repositoryName: string;
   installationId: number | null;
 };
+
+async function fetchPullRequestChangedFiles({
+  installationId,
+  owner,
+  repo,
+  pullNumber,
+}: {
+  installationId: number;
+  owner: string;
+  repo: string;
+  pullNumber: number;
+}) {
+  const octokit = getGitHubInstallationClient(installationId);
+  const files: PullRequestChangedFile[] = [];
+  let page = 1;
+
+  while (true) {
+    const response = await octokit.request("GET /repos/{owner}/{repo}/pulls/{pull_number}/files", {
+      owner,
+      repo,
+      pull_number: pullNumber,
+      per_page: 100,
+      page,
+    });
+
+    files.push(
+      ...response.data.map((file) => ({
+        filename: file.filename,
+        status: file.status,
+        additions: file.additions,
+        deletions: file.deletions,
+        changes: file.changes,
+      })),
+    );
+
+    if (response.data.length < 100) {
+      return files;
+    }
+
+    page += 1;
+  }
+}
 
 function isObject(value: unknown): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -165,9 +209,17 @@ export async function processPullRequestWebhookEvent({
       throw new Error("Pull request payload is missing installation.id for check run creation.");
     }
 
+    const changedFiles = await fetchPullRequestChangedFiles({
+      installationId: pullRequest.installationId,
+      owner: pullRequest.repositoryOwner,
+      repo: pullRequest.repositoryName,
+      pullNumber: pullRequest.number,
+    });
+
     const evaluation = evaluatePullRequestEvidence({
       title: pullRequest.title,
       body: pullRequest.body,
+      changedFiles,
     });
 
     await createOrUpdateMergeProofCheckRun({

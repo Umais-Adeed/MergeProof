@@ -4,7 +4,7 @@ const upcomingSections = [
   {
     title: "Evidence Parsing",
     description:
-      "The next milestone can start enriching check runs with real repository and pull request evidence.",
+      "Changed-file signals now enrich check runs with deterministic repository-level evidence.",
   },
   {
     title: "Pass/Fail Logic",
@@ -89,9 +89,9 @@ export default async function Home() {
                   MergeProof now updates existing evidence-gate checks instead of duplicating them on the same commit.
                 </h1>
                 <p className="max-w-2xl text-sm leading-7 text-stone-300 sm:text-base">
-                  This milestone upgrades the first GitHub-side action: a deterministic
+                  This milestone upgrades the GitHub-side action: a deterministic
                   <code> mergeproof/evidence-gate </code>
-                  check run on the PR head SHA with success, neutral, or failure based on PR evidence quality.
+                  check run on the PR head SHA with success, neutral, or failure based on PR body evidence plus deterministic changed-file signals.
                 </p>
               </div>
             </div>
@@ -104,7 +104,7 @@ export default async function Home() {
                 <div className="rounded-2xl border border-emerald-400/30 bg-emerald-400/10 p-4">
                   <p className="font-medium text-emerald-200">Check run creation active</p>
                   <p className="mt-1 text-stone-300">
-                    Supported PR actions now evaluate PR evidence and update or create the matching check run for the current head SHA.
+                    Supported PR actions now evaluate PR evidence, fetch changed files, and update or create the matching check run for the current head SHA.
                   </p>
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
