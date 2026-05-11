@@ -27,6 +27,13 @@ const CONFIG_FILES = new Set([
   "pnpm-lock.yaml",
   "yarn.lock",
   "bun.lockb",
+  "build.gradle",
+  "build.gradle.kts",
+  "settings.gradle",
+  "settings.gradle.kts",
+  "gradle.properties",
+  "gradlew",
+  "gradlew.bat",
   "tsconfig.json",
   "docker-compose.yml",
   "docker-compose.yaml",
@@ -72,6 +79,7 @@ function isConfigOrDependencyFile(path: string) {
   const basename = getBasename(normalized);
 
   return (
+    normalized.startsWith("gradle/") ||
     CONFIG_FILES.has(basename) ||
     /^eslint(\.|$)/i.test(basename) ||
     /^prettier(\.|$)/i.test(basename) ||
