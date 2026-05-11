@@ -28,9 +28,8 @@ Configure the minimum permissions MergeProof currently needs:
 - Contents: read-only
 - Pull requests: read-only
 - Checks: read and write
-- Issues: read and write
 
-`Issues` is included for later PR comment work. Current MergeProof behavior does not post comments yet.
+`Issues` permission is optional for later PR comment work. Current MergeProof behavior does not post comments yet.
 
 ## 3. Webhook events
 
@@ -80,6 +79,8 @@ APP_URL="http://localhost:3000"
 ```
 
 Restart `npm run dev` after changing `.env`.
+
+If Next.js starts on `3001` because `3000` is busy, update `APP_URL` and your local webhook target to `http://localhost:3001`.
 
 ## 7. Verify delivery
 

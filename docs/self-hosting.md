@@ -68,6 +68,8 @@ npm run dev
 
 Open `http://localhost:3000`.
 
+If `3000` is already in use, Next.js may switch to `3001`. If that happens, update `APP_URL` in `.env` and the Smee target to the same port.
+
 ## 8. Expose webhooks in development with Smee
 
 GitHub cannot deliver webhooks directly to `localhost`. Use Smee in development:

@@ -5,10 +5,11 @@
 Make sure the Smee client targets the webhook route, not the app root:
 
 ```bash
-npx smee-client --url https://smee.io/mergeproof-dev --target http://localhost:3001/api/github/webhook
+npx smee-client --url https://smee.io/mergeproof-dev --target http://localhost:3000/api/github/webhook
 ```
 
 Also confirm your GitHub App webhook URL is the same Smee URL.
+If Next.js started on `3001` because `3000` was busy, use `http://localhost:3001/api/github/webhook` instead.
 
 ## Webhook returns 401
 
@@ -110,4 +111,4 @@ npx prisma migrate dev
 
 ## Localhost cannot be used directly as GitHub webhook URL
 
-GitHub cannot deliver webhooks to `http://localhost:3001` directly. For local development, use Smee or another public tunnel. In production, use a public HTTPS URL.
+GitHub cannot deliver webhooks to `http://localhost:3000` directly. For local development, use Smee or another public tunnel. In production, use a public HTTPS URL.

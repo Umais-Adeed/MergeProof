@@ -67,7 +67,7 @@ DATABASE_URL="postgresql://mergeproof:mergeproof@localhost:5432/mergeproof"
 GITHUB_APP_ID=""
 GITHUB_PRIVATE_KEY=""
 GITHUB_WEBHOOK_SECRET=""
-APP_URL="http://localhost:3001"
+APP_URL="http://localhost:3000"
 ```
 
 Start Postgres:
@@ -89,7 +89,9 @@ Start the app:
 npm run dev
 ```
 
-Open `http://localhost:3001`.
+Open `http://localhost:3000`.
+
+If port `3000` is already in use, Next.js may start on `3001`. In that case, update `APP_URL` and your Smee target to match the actual local port.
 
 ## GitHub App setup
 
@@ -102,11 +104,11 @@ Create your own GitHub App for self-hosted use. At minimum, configure:
   - Contents: read
   - Pull requests: read
   - Checks: read and write
-  - Issues: read and write
 - Webhook events:
   - Pull request
   - Installation and repository-related events if available
-  - Issue comment can be enabled later, but MergeProof does not process it yet
+
+`Issues` permission is optional for future comment features. Current MergeProof behavior does not post comments.
 
 Generate a private key and put the full PEM in `GITHUB_PRIVATE_KEY`. The SHA256 fingerprint shown in GitHub settings is not the private key.
 
@@ -125,7 +127,7 @@ https://smee.io/mergeproof-dev
 Forward Smee deliveries to your local webhook route:
 
 ```bash
-npx smee-client --url https://smee.io/mergeproof-dev --target http://localhost:3001/api/github/webhook
+npx smee-client --url https://smee.io/mergeproof-dev --target http://localhost:3000/api/github/webhook
 ```
 
 Then open or edit a PR in a repository where the app is installed.
