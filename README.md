@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="logo.png" alt="MergeProof Logo" width="120" />
+</p>
+
 # MergeProof
 
 MergeProof is a self-hosted GitHub App that checks pull requests before maintainers spend review time on them.
